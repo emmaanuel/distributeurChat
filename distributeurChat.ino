@@ -78,7 +78,7 @@ void printWaitingTimeConfiguration() {
   int hours = numberOfHours(val);
   int minutes = numberOfMinutes(val);
   int seconds = numberOfSeconds(val);
-  sprintf(ligne1, " Attente repas: ");
+  sprintf(ligne1, "Attente repas: ");
   sprintf(ligne2, "%dJ et %.2d:%.2d:%.2d", days, hours, minutes, seconds);
   lcd.setCursor(0, 0);
   lcd.print(ligne1);
@@ -87,8 +87,8 @@ void printWaitingTimeConfiguration() {
 }
 
 void printQuantityConfiguration() {
-  sprintf(ligne1, "Quantite croket:");
-  sprintf(ligne2, "      %3d       ", configuration.quantite);
+  sprintf(ligne1, "Quantite croket ");
+  sprintf(ligne2, "      %3ds    ", configuration.quantite);
   lcd.setCursor(0, 0);
   lcd.print(ligne1);
   lcd.setCursor(0, 1);
@@ -129,7 +129,7 @@ void loop() {
       break;
     case 1:
       if (value != 0) {
-        configuration.waitingTime += value;
+        configuration.waitingTime += value*60*5;
         EEPROM_writeAnything(0, configuration);
       }
       printWaitingTimeConfiguration();
@@ -141,7 +141,6 @@ void loop() {
       }
       printQuantityConfiguration();
       break;
-
   }
 
   // Gestion du decompte de temps et de la distribution de croquette
