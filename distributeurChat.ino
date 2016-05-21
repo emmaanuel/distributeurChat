@@ -8,6 +8,7 @@
 #define moteurPin 3
 
 // LCD definition
+#define LCD_light 9
 #define LCD_RS      12
 #define LCD_RW      11
 #define LCD_EN      10
@@ -36,10 +37,8 @@ struct config_t
   int quantite;
 } configuration;
 
-
-
 ClickEncoder *encoder;
-int16_t value = 0, last = 0, correction = 0;
+int16_t value = 0, last = 0;
 
 char ligne1[16] = "";
 char ligne2[16] = "";
@@ -50,7 +49,8 @@ void timerIsr() {
   encoder->service();
 }
 
-long remainingTime, lastDistributionTime = 0;
+long correction, remainingTime, lastDistributionTime , elapsedLightTime, lastActionTime = 0;
+long lightDuration = 10;
 
 void printRemainingTime(long val) {
   int days = elapsedDays(val);
@@ -100,12 +100,18 @@ void switchMenu() {
   menu += 1;
   menu = menu % 3;
   Serial.println(menu);
+  lastActionTime = millis() / 1000;
 }
 
 void setup() {
   Serial.begin(9600);
+  Serial.println("Starting");
   EEPROM_readAnything(0, configuration);
+  if (configuration.waitingTime < 60){
+    configuration.waitingTime = 60;
+  }
   pinMode(moteurPin, OUTPUT);
+  pinMode(LCD_light, OUTPUT); 
   analogWrite(moteurPin, 0);
   encoder = new ClickEncoder(A1, A0, A2, 4);
   encoder->setAccelerationEnabled(true);
@@ -120,16 +126,22 @@ void setup() {
 
 void loop() {
   value = encoder->getValue();
+  if (value != 0){
+    lastActionTime = millis() / 1000;
+  }
 
   // Gestion du menu
   switch (menu) {
     case 0:
       printRemainingTime(remainingTime);
-      correction += value;
+      correction += value*60;
       break;
     case 1:
       if (value != 0) {
         configuration.waitingTime += value*60*5;
+        if (configuration.waitingTime<300){
+          configuration.waitingTime = 300;
+        }
         EEPROM_writeAnything(0, configuration);
       }
       printWaitingTimeConfiguration();
@@ -152,6 +164,18 @@ void loop() {
     lastDistributionTime = millis() / 1000;
     correction = 0;
     analogWrite(moteurPin, 0); // Arret de la vis
+  }
+
+    // Gestion de l'allumage de l'ecran
+    elapsedLightTime = (millis() / 1000) - lastActionTime - lightDuration;
+  if (elapsedLightTime > 0) {
+    Serial.print("Light Off ");
+    Serial.println(elapsedLightTime);
+    digitalWrite(LCD_light, LOW); // Stop de la lumiere 
+  } else {
+    Serial.print("Light On ");
+    Serial.println(elapsedLightTime);
+    digitalWrite(LCD_light, HIGH); // Allume de la lumiere
   }
 
   // Gestion du push
