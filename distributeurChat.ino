@@ -49,8 +49,8 @@ void timerIsr() {
   encoder->service();
 }
 
-long correction, remainingTime, lastDistributionTime , elapsedLightTime, lastActionTime = 0;
-long lightDuration = 10;
+long correction, remainingTime, lastDistributionTime , elapsedLightTime, lastActionTime = 0L;
+unsigned long lightDuration = 10L;
 
 void printRemainingTime(long val) {
   int days = elapsedDays(val);
@@ -65,11 +65,14 @@ void printRemainingTime(long val) {
   lcd.print(ligne2);
 }
 
-void printDistribution() {
+void printDistribution(long duree) {
+  lcd.clear();
+  sprintf(ligne1, "  Distribution ");
+  sprintf(ligne2, "en cours - %ds", duree);
   lcd.setCursor(0, 0);
-  lcd.print("  Distribution  ");
+  lcd.print(ligne1);
   lcd.setCursor(0, 1);
-  lcd.print("    en cours    ");
+  lcd.print(ligne2);
 }
 
 void printWaitingTimeConfiguration() {
@@ -158,10 +161,13 @@ void loop() {
   // Gestion du decompte de temps et de la distribution de croquette
   remainingTime = configuration.waitingTime - ((millis() / 1000) - lastDistributionTime) + correction;
   if (remainingTime <= 0) {
-    printDistribution();
+    printDistribution(configuration.quantite);
     analogWrite(moteurPin, 255); // Activation de la vis sans fin
-    delay(configuration.quantite * 1000);
-    lastDistributionTime = millis() / 1000;
+    for (int i=0; i <= configuration.quantite; i++){
+      printDistribution(configuration.quantite - i);
+      delay(1000);
+    }
+    lastDistributionTime = millis() / 1000L;
     correction = 0;
     analogWrite(moteurPin, 0); // Arret de la vis
   }
